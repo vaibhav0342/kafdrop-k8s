@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: kafka-tools
+  labels:
+    app: demo-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: demo-app
+
+  template:
+    metadata:
+      labels:
+        app: demo-app
+
+    spec:
+      containers:
+        - name: demo-app
+
+          # Demo application image
+          image: your-ecr-repository/demo-app:1.0.0
+
+          imagePullPolicy: IfNotPresent
+
+          env:
+
+            # 1. Kafka bootstrap servers
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-broker-1.kafka-tools.svc.cluster.local:9098,kafka-broker-2.kafka-tools.svc.cluster.local:9098,kafka-broker-3.kafka-tools.svc.cluster.local:9098"
+
+            # 2. Use SASL over TLS
+            - name: KAFKA_SECURITY_PROTOCOL
+              value: "SASL_SSL"
+
+            # 3. AWS MSK IAM authentication
+            - name: KAFKA_SASL_MECHANISM
+              value: "AWS_MSK_IAM"
+
+            # 4. IAM login module
+            - name: KAFKA_SASL_JAAS_CONFIG
+              value: "software.amazon.msk.auth.iam.IAMLoginModule required;"
+
+            # 5. AWS MSK IAM callback handler
+            - name: KAFKA_SASL_CALLBACK_HANDLER
+              value: "software.amazon.msk.auth.iam.IAMClientCallbackHandler"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

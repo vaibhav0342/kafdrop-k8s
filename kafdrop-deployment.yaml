@@ -1,0 +1,156 @@
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: kafdrop
+  namespace: kafka-tools
+
+  labels:
+    app: kafdrop
+    environment: production
+
+spec:
+
+  # Run 2 pods for production
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: kafdrop
+
+  template:
+
+    metadata:
+      labels:
+        app: kafdrop
+        environment: production
+
+    spec:
+
+      # Use the IAM ServiceAccount created earlier
+      serviceAccountName: kafdrop
+
+      terminationGracePeriodSeconds: 30
+
+      # Security settings
+      securityContext:
+        runAsNonRoot: true
+
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Try to put replicas on different nodes
+      affinity:
+
+        podAntiAffinity:
+
+          preferredDuringSchedulingIgnoredDuringExecution:
+
+            - weight: 100
+
+              podAffinityTerm:
+
+                topologyKey: kubernetes.io/hostname
+
+                labelSelector:
+
+                  matchLabels:
+                    app: kafdrop
+
+      containers:
+
+        - name: kafdrop
+
+          image: obsidiandynamics/kafdrop:4.0.2
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+
+          env:
+
+            - name: KAFKA_BROKERCONNECT
+
+              value: "b-1.kafkaprod.xxxxx.amazonaws.com:9098,b-2.kafkaprod.xxxxx.amazonaws.com:9098,b-3.kafkaprod.xxxxx.amazonaws.com:9098"
+
+            # ==================================================
+            # Kafka security
+            # ==================================================
+
+            - name: KAFKA_PROPERTIES
+
+              value: |
+                security.protocol=SASL_SSL
+                sasl.mechanism=AWS_MSK_IAM
+                sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;
+                sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler
+
+            # ==================================================
+            # Disable dangerous operations
+            # ==================================================
+
+            - name: CMD_ARGS
+
+              value: >-
+                --topic.deleteEnabled=false
+                --topic.createEnabled=false
+                --message.sendEnabled=false
+
+            - name: JVM_OPTS
+
+              value: "-Xms256m -Xmx768m"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+
+          securityContext:
+
+            allowPrivilegeEscalation: false
+
+            capabilities:
+              drop:
+                - ALL
+
+          readinessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+            failureThreshold: 3
+
+          livenessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+
+            failureThreshold: 3
+

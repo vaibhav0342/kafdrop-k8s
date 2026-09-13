@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "KafdropMSKReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:Connect",
+        "kafka-cluster:DescribeCluster",
+        "kafka-cluster:DescribeClusterDynamicConfiguration",
+        "kafka-cluster:DescribeTopic",
+        "kafka-cluster:DescribeGroup",
+        "kafka-cluster:ReadData"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+

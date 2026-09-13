@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker-1
+  namespace: kafka-tools
+spec:
+  type: ExternalName
+  externalName: b-1.xxxxx.ap-south-1.amazonaws.com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker-2
+  namespace: kafka-tools
+spec:
+  type: ExternalName
+  externalName: b-2.xxxxx.ap-south-1.amazonaws.com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker-3
+  namespace: kafka-tools
+spec:
+  type: ExternalName
+  externalName: b-3.xxxxx.ap-south-1.amazonaws.com
+
